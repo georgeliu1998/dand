@@ -1,0 +1,488 @@
+---
+output: html_document
+---
+Understanding Wine Quality through the Lens of Data Analysis Using R 
+========================================================
+
+by George Liu
+
+# Introduction
+We have always relied on wine experts who use their esoteric jargons to rate wine qualities for us. But what exactly is wine quality based on? What are the criteria? In this project, we look at the Wine Quality dataset and use data analysis methods with R to explore the relationship between wine quality and various attributes such as acidity, sugar and alcohol.
+
+We start with summary statistics of the dataset and making some exploratory analysis plots.
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+suppressMessages(library(ggplot2)) 
+suppressMessages(library(gridExtra)) 
+suppressMessages(library(dplyr)) 
+suppressMessages(library(GGally))
+
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+wine <- read.csv("wineQualityReds.csv")
+```
+
+# Univariate Plots Section
+```{r echo=FALSE, message=FALSE, warning=FALSE, Univariate_Plots}
+# Get a sense of the data
+dim(wine); str(wine); summary(wine) 
+# The first column is not redant so we remove it.
+wine <- wine[,2:13]
+# The "quality" variable should be a categorical one, so convert it. 
+wine_quality <- wine
+wine_quality$quality <- factor(wine$quality, ordered = TRUE)
+# Add a new categorical variable "grade" to simplify the quality tiering and plotting
+grade <- lapply(wine_quality$quality, 
+                FUN = function(x) 
+                  if (x <= 4) {
+                    return("bad")
+                    } else if (x %in% c(5, 6)) {
+                      return("ok")
+                      } else if (x >= 7) {
+                        return("good")
+                        }
+                ) 
+# Now convert grade to factor and add back to the data frame
+wine_grade <- data.frame(wine_quality, grade = as.character(grade))
+wine_grade$grade <- ordered(wine_grade$grade, levels = c("bad", "ok", "good"))
+# Plot the quality distribution of all the wines
+ggplot(data=wine, aes(x=quality)) +
+  geom_bar() +
+  scale_x_continuous(breaks=seq(3, 8))
+```
+
+The above is some summary stats and the distribution plot for wine quality. There are only six levels of quality and they follow a nearly normal distribution. The following is the summary stats the quality variable (when treated as numeric): 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(wine$quality)
+# Now plot the histogram of each feature to understand its distribution.
+# First for the acid group
+# Make a function to avoid repetitive coding
+plothist <- function(dat, varname){
+  ggplot(data=dat, 
+               aes_string(x = varname)) +
+  geom_histogram()
+}
+
+a1 <- plothist(wine_quality, 'fixed.acidity')
+a2 <- plothist(wine_quality, 'volatile.acidity') 
+a3 <- plothist(wine_quality, 'citric.acid')
+grid.arrange(a1, a2, a3)
+```
+
+The above plots show that while both fixed and volatile acidity exhibiting somewhat normal distribution, citric acid is more uniform with a peak at the lower end. The following is some summary stats for these above variables.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+summary(wine_quality$fixed.acidity)
+summary(wine_quality$volatile.acidity)
+summary(wine_quality$citric.acid)
+
+# Next repeat the plots for other variables. First residual sugar and stats:
+plothist(wine_quality, 'residual.sugar')
+summary(wine_quality$residual.sugar)
+```
+
+The previous is the histogram and summary stats of residual.sugar. As it shows, the distribution is unimodal, nearly normal and right skewed. It seems that there are outliers in the higher end, i.e. high residual sugar levels. This may potentially be the wines that have higher quality or otherwise
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+plothist(wine_quality, 'alcohol')
+summary(wine_quality$alcohol)
+```
+
+The above plot shows alcohol distribution and the summary stats. Althogh it is not strictly unimodal, it dose exhibit some strend as the alcohol level goes up - the count decreases.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+plothist(wine_quality, 'chlorides')
+summary(wine_quality$chlorides)
+
+plothist(wine_quality, 'free.sulfur.dioxide')
+summary(wine_quality$free.sulfur.dioxide)
+
+plothist(wine_quality, 'total.sulfur.dioxide')
+summary(wine_quality$total.sulfur.dioxide)
+
+plothist(wine_quality, 'sulphates')
+summary(wine_quality$sulphates)
+
+plothist(wine_quality, 'pH')
+summary(wine_quality$pH)
+
+plothist(wine_quality, 'density')
+summary(wine_quality$density)
+
+```
+
+The above plots and summary stats correspond to the rest of the variables in the dataset, i.e. chlorides, free sulfur dioxide, total sulfur dioxide, sulphates, pH and density. Chlorides are very concentrated at lower levels and some outliers are present in the higher spectrum. This also may be the diffentiating factor between different quality levels of wine. Free and total sulfur dioxide present similiar patterns of distribution, peaking at lower levels, reducing in count at higher levels. Sulphates levels are right skewed, with some outlier at the higher end. When it comes to pH and density distribution, an increasling normal pattern is visible.    
+
+# Univariate Analysis
+
+### Structure of the Dataset
+The dataset contains objetive and subjective quality data for 1599 red wines. There are a total of 12 variables, of which 11 are objective quality factors obtained from quality tests such as pH test, and 1 subjective factor that contains median expert evaluation score.
+
+After an initial assessment, it seems that the subjective test variables can be further broken down into six major categories:
+
+* Acid: fixed acidity, volatile acidity, citric acid
+* Sugar: residual suga
+* Salt: chlorides
+* Alcohol: alcohol
+* Chemicals: sulfur dioxide(free and total), sulphates, pH
+* Physical: density
+
+This might be useful later as the variables within a group may be correlated and hence may not be included together.
+
+### Main Features of Interest
+After some research about wine quality assessment, it appears to me that acid, sugar and alcohol levels are the most important features when tasting and deciding wine quality. In particular, the balance among these factors to give a harmonized overall taste seems to be the main concern. This will become more clear as we progress through this study.
+
+
+### Other Features
+Aside from a balanced taste containing sugar, acid and alcohol, the other chemical ingredients may also be important since they all contribute to the taste of wine. However, at this point, it is not immediately clear whether pH level and density have a direct link with subjective wine quality.
+
+
+### New Variable
+I did create a new variable "grade". Since quality should be a categorical variable, but is given as numeric, it has to be converted. Furthermore, 6 levels may be hard to handle and understand. The quality variable is then transformed to a new variable "grade" with the following mapping:
+
+quality  | grade
+-------- | --------
+3,4      | bad
+5,6      | ok
+7,8      | good
+
+
+### Unusual Distributions
+Citric acid is a bit unusual in that it displays an overal uniform distribution while having a huge peak at the lower level. This indicates citric acid level can be a very useful feature in following analysis.
+
+Aside from that, for the other distributions, it seems some sorts of combination between the variables may be necessary to further explore the relationship between wine quality and different criteria - since the distributions vary from variable to variable.
+
+
+# Bivariate Plots Section
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10, Bivariate_Plots}
+# Let's start by creating a scatter plot matrix. In order to display the variable names properly, change all names to abbreviations first.
+wine_grade_2 <- wine_grade
+colnames(wine_grade_2) <- c("acid.f", "acid.v", "acid.c", "sgr", "chld", "sd.fr", "sd.to", "den", "ph", "sul", "alc", "qa", "gr")
+ggpairs(wine_grade_2) +
+  theme(axis.text = element_blank())
+```
+
+The above scatterplot matrix visualizes the relationship between each variable pairs in the dataset, with the correlations between the pairs marked at the intersection of the two variables plotted. 
+
+Note: the variables have been renamed to be properly displayed on the graph. The following is the mapping:
+"acid.f": fixed.acidity, "acid.v": volatile.acidity, "acid.c": citric.acid, "sgr": residual.sugar, "chld": chlorides, "sd.fr": free.sulfur.dioxide, "sd.to": total.sulfur.dioxide, "den": density, "ph": pH, "sul": sulphates, "alc": alcohol, "qa": quality, "gr": grade
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Next, we explore relationship between different objective criteria and quality.
+# First plot fixed.acidity histogram by different qualities
+ggplot(data=wine_grade, aes(x=fixed.acidity)) +
+  geom_histogram() +
+  facet_wrap(~quality)
+```
+
+This is the relationship between different objective criteria and quality. The distribution varies greatly.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Plot the different grades' fixed.acidity distribution against each other to see the difference
+# Make a function to avoid repetitive coding
+plotfreqploy <- function(dat, varname, byvar){
+  ggplot(data=dat, 
+               aes_string(x=varname)) +
+  geom_freqpoly(aes_string(color=byvar))
+
+}
+acid1 <- plotfreqploy(wine_grade, 'fixed.acidity', 'grade')
+acid2 <- plotfreqploy(wine_grade, 'volatile.acidity', 'grade')
+acid3 <- plotfreqploy(wine_grade, 'citric.acid', 'grade')
+grid.arrange(acid1, acid2, acid3)
+```
+
+The above plot shows the different grades' fixed.acidity distribution against each other. It's weird that "OK" grades are the group with most variability across acidity levels as I would expect a distribution polygon curve order corresponding to the grade levels. An alternative way is to use boxplots and scatterplots to visualize as follows, which definitely is more intuitive. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plotboxscatter <- function(dat, varname, byvar){
+  ggplot(data=dat, 
+         aes_string(x=byvar,
+                    y=varname)) +
+    geom_boxplot() +
+    geom_point(alpha=0.2, 
+               position=position_jitter(width=.5,
+                                        height=0))
+
+}
+plotboxscatter(wine_grade, 'fixed.acidity', 'quality')
+plotboxscatter(wine_grade, 'volatile.acidity', 'quality')
+plotboxscatter(wine_grade, 'citric.acid', 'quality')
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Now do the same thing the other variables, will group together using following groups: 
+# Acid, Sugar, Salt, Alcohol, Chemicals, Pysical
+# First, Sugar
+plotfreqploy(wine_grade, 'residual.sugar', 'grade')
+# Salt
+plotfreqploy(wine_grade, 'chlorides', 'grade')
+# Alcohol
+plotfreqploy(wine_grade, 'alcohol', 'grade')
+```
+
+These plots visualize the relationship between residual.sugar, chlorides, alcohol and grade. Again, alcohol levels are more uniformly distributed for good and bad grades, while ok grade peaks at lower levels of alcohol. For comparison, the corresponding box and scatter plots are below:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plotboxscatter(wine_grade, 'residual.sugar', 'grade')
+plotboxscatter(wine_grade, 'chlorides', 'grade')
+plotboxscatter(wine_grade, 'alcohol', 'grade')
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Chemicals
+chemical1 <- plotfreqploy(wine_grade, 'free.sulfur.dioxide', 'grade')
+chemical2 <- plotfreqploy(wine_grade, 'total.sulfur.dioxide', 'grade')
+chemical3 <- plotfreqploy(wine_grade, 'sulphates', 'grade')
+chemical4 <- plotfreqploy(wine_grade, 'pH', 'grade')
+grid.arrange(chemical1, chemical2, chemical3, chemical4, ncol=2)
+```
+
+Similiar to previous plots, these plots show the frequency ploygon plots for the following variables across different grades: free.sulfur.dioxide, total.sulfur.dioxide, sulphates, pH. They present similiar patterns as before.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Physical
+plotfreqploy(wine_grade, 'density', 'grade')
+```
+
+This is the frequency polygon plot for density. We see the same theme, mediocre wines centre around a certain level.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Now make a function to do repetitive boxplotting
+plotbox <- function(dat, xvar, yvar){
+  ggplot(data=dat,
+         aes_string(x=xvar,
+                    y=yvar)) +
+    geom_boxplot()
+}
+# Plot the relationship between fixed acidity and quality
+plotbox(wine_grade, 'quality', 'fixed.acidity')
+```
+
+This above boxplot between fixed acidity and quality levels show some relationship is present, but not very consistent.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# ..... similiar graphs omitted. Please refer to the scatterplot matrix.
+# Plot the relationship between sugar and quality
+plotbox(wine_grade, 'quality', 'residual.sugar') +
+  scale_y_continuous(limits=c(0, 6)) 
+```
+
+This graph showing correlation between quality and residual.sugar is similiar to the previous one as the relationship between residual sugar and quality is not consistent.
+
+# Bivariate Analysis
+
+### Some of the Relationships Observed in This Part of the Investigation
+It seems that for almost all the test results, "ok" wines have distributions more "peaked", whereas both "good" and "bad" wines tend to have more uniform distributions. This is quite surprising to me since I was expecting a correspondingly sequential order in distribution pattern. The data form was not changed since all operations were carried out without the need of adjusting.
+
+We are most concerned about the factors affecting wine quality, and by looking at the relationship between quality/grade and other variables, it is clear that there is a relationship between wine quality and these variables:
+
+* fixed.acidity (+)
+* volatile.acidity (-)
+* citric.acid (+)
+* density (-)
+* pH (-)
+* sulphates (+)
+* alcohol (+)
+
+"+" indicates a positive correlation, "-" for negative relationship.
+
+
+### Interesting Relationships between the other Features
+I selected acid, sugar and alcohol levels as the main features. However, from the above observations, it appears that sugar(residual sugar) does not have a clear relationship with quality. On the other hand, other features such as density, pH and sulphates show correlation with wine quality. 
+
+Furthermore, free sulfur dioxide and total dioxide appear to have strong correlation (0.668). This is expected as these two factors are related - free is part of total. The implication is we may need to choose only one of them for model building.
+
+### The strongest Relationship
+The relationship between volatile acidity and quality is very strong (citrid acity and quality is very close if not on par). The plot clearly shows as the quality goes up, the volatile acidity level decreases significantly.
+
+In terms of correlation, fixed acidity and pH have a correlation of -0.683, which is totally sensible as pH is a measure gauging acidity level. Again, this indicates we may only need to choose either variable for model buidling.
+
+
+
+# Multivariate Plots Section
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, Multivariate_Plots}
+# Make a function to avoid repetitive coding
+plotscatter <- function(dat, xvar, yvar, byvar){
+ ggplot(data=dat, 
+       aes_string(x=xvar,
+                  y=yvar)) +
+  geom_point(aes_string(color=byvar), 
+             alpha=0.2) 
+}
+# Plot the relationship between fixed acid and volatile acid, coloring using wine grade
+plotscatter(wine_grade, 'fixed.acidity', 'volatile.acidity', 'grade') +
+  geom_smooth(aes(color=grade), method='lm')
+# Plot the relationship between fixed acid and residual sugar, coloring using wine grade
+plotscatter(wine_grade, 'fixed.acidity', 'residual.sugar', 'grade') +
+  geom_smooth(aes(color=grade), method='lm') +
+  scale_y_continuous(limits=c(1, 6))
+# Plot the relationship between fixed acid and pH, coloring using wine grade
+plotscatter(wine_grade, 'fixed.acidity', 'pH', 'grade') +
+  geom_smooth(aes(color=grade), method='lm') 
+# Still no pattern recognizable
+```
+
+The above plots are the scatterplots between fixed. acidity and volatile.acidity, residual.sugar and pH respectively. Volatile acidity levels seem to vary among different quality grades. Other than that, there does not seem to be any pattern.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Check the median values of the three most important contents of wine to a sense of the magnitude of the values and plot relationship between alcohol/ph/residual(apr) ratio and quality
+# summary(wine_grade)
+plotbox(wine_grade, 'quality', 'alcohol/pH/residual.sugar')
+plotbox(wine_grade, 'quality', 'alcohol/pH')
+```
+
+The above plots are boxplots between quality and 2 ratios: apr (alcohol/pH/residual.sugar) and ap (alcohol/pH). The second one is an improved version by dropping the residual.sugar variable, as unlike alcohol and pH, this variable is unit based. The plots are insightful as they clearly show a difference in the apr ratio across qualities, which validates the theory of good wines are defined by their balance of different tastes.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Use histograms to explore apr ratios
+plothist(wine_grade, 'alcohol/pH/residual.sugar') + 
+  facet_wrap(~grade)
+```
+
+These histograms for the apr ratios are interesting, but still not enough to explain quality difference.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Use scatterplot to explore wine contents profiles
+plotscatter(wine_grade, 'pH', 'residual.sugar', 'alcohol') +
+  facet_wrap(~grade)
+```
+
+This previous plot is an attempt at identifying "wine contents profiles" - it's a scatterplot between pH and residual.sugar, coloring by alcohol and faceting by grade. There is not any recongnizable pattern.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# No recognizable pattern here
+# Add other variables to check for patterns
+plotscatter(wine_grade, 'alcohol/pH/residual.sugar', 'chlorides', 'grade') +
+  geom_smooth(method='lm', aes(color=grade))
+# Try total sulfur dioxide
+plotscatter(wine_grade, 'alcohol/pH/residual.sugar', 'total.sulfur.dioxide', 'grade') +
+  geom_smooth(method='lm', aes(color=grade))
+# Now try density and sulphates
+plotscatter(wine_grade, 'alcohol/pH/residual.sugar', 'density', 'grade') +
+  geom_smooth(method='lm', aes(color=grade))
+plotscatter(wine_grade, 'alcohol/pH/residual.sugar', 'sulphates', 'grade') +
+  geom_smooth(method='lm', aes(color=grade))
+```
+
+The above are scatterplots between apr ratio (alcohol/pH/residual.sugar) and chlorides, total.sulfur.dioxide, density and sulphates. Again, these are interesting, but not informative.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Now try arvc ratio
+plotbox(wine_grade, 'grade', 'alcohol/residual.sugar/volatile.acidity/chlorides')
+```
+
+This is a boxplot between grade and arvc ratio (alcohol/residual.sugar/volatile.acidity/chlorides). This is very intersting, it clearly differentiates quality groups. In particular, the "good" grade has much less outliers than "ok" grade. When chlorides is factored into the ratio, the difference among groups is much larger. Cleary a pattern is emerging - as wine quality increases, there are less and less outliers and the points cluster towards the x-axis.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE} 
+# Now try adding sulfates
+plotbox(wine_grade, 'grade', 'alcohol/residual.sugar/volatile.acidity/sulphates')
+# The gap narrows. How about adding all 4
+plotbox(wine_grade, 'grade', 'alcohol/residual.sugar/volatile.acidity/chlorides/sulphates')
+# Still not as good as arvc
+# Try apr + 
+ggplot(data=wine_grade,
+       aes(x=alcohol,
+           y=residual.sugar/citric.acid)) +
+  geom_point() +
+  facet_wrap(~quality)
+```
+
+The above plots tried different combinations of ratios: alcohol/residual.sugar/volatile.acidity/sulphates and alcohol/residual.sugar/volatile.acidity/chlorides/sulphates and created boxplots between them and wine grade. These relationships, as shown in the graph, are clearly not as indicative as the arvc ratio. The final plot is a scatterplot between alcohol and residual.sugar/citric.acid, faceted by quality.
+
+
+# Multivariate Analysis
+
+### Relationships Observed in this Part of the Investigation
+With more information, it becomes clear to me that the main features of interest should be "pH + residual sugar + alcohol"", instead of "acidity + residual sugar + alcohol". This is because pH level measures the acidity level and is directly correlated with the level of human taste of acidity level. As these three factors represent different tastes, there is not a clear interaction relationship among them.  
+
+
+### Interesting interactions between Features
+After exploring relationships among various groups of variables, it seems that no clear correlation is available. I then did further research online to understand the factors affecting wine taste and quality. The pointer finally turns again to the balance of tastes, i.e. acidity(pH), sweetness(residual sugar), alcohol and tannin. Except for tannin, we have other factors available. Therefore, I resorted to the "apr ratio" (alcohol:ph:residual sugar). In the boxplot showing apr ratio's relationship with quality, it's clear that as the quality increases, apr also increases. This validates the "balance taste" theory. Furthermore, when I realized both pH and alcohol are unit-less variables, I switched to using the boxplot of alcohol/ph ratio based on quality. This plot immediately shows difference between different quality groups, indicating pH and alcohol might be the two most important factors in determining wine quality. 
+
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_One}
+plotbox(wine_grade, 'quality', 'alcohol/pH/residual.sugar') +
+  labs(x="Wine Quality Level", 
+       y="APR Ratio (alcohol/pH/residual.sugar)",
+       title="APR Ratio of Different Wine Qualities") +
+  scale_y_continuous(limits=c(0, 3))
+```
+
+### Description One
+This boxplot has different wine quality levels on its x-axis, the APR ratio (alcohol:pH:residual sugar) on its y-axis. It clearly shows the increasing trend in the apr ratio when wine quality moves from lower level to higher level. The plot validates the concept of "balancing taste" attribute of good quality wine. Here is the supporting statistics:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+with(wine_grade, by(alcohol/pH/residual.sugar, quality, summary))
+```
+
+
+### Plot Two
+```{r echo=FALSE, message=FALSE, warning=FALSE, Plot_Two}
+plotbox(wine_grade, 'quality', 'alcohol/pH') +
+  labs(x="Wine Quality Level",
+       y="AP Ratio (alcohol/pH)",
+       title="AP Ratio of Different Wine Qualities") +
+  scale_y_continuous(limits=c(2.8, 4.0))
+```
+
+### Description Two
+Similiar to plot one, this plot uses a boxplot to show the different attributes across different quality levels. However, a minor improvement is made by changing the y-axis to the AP ratio (alcohol:pH). Albeit small, the change leads to a much more clear comparison amongst all the levels. This change is driven by the idea that both alcohol and pH levels are unit-less while being the main quality determinants. The following is the supporting summary statistics:
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+with(wine_grade, by(alcohol/pH, quality, summary))
+```
+
+
+### Plot Three
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.width=12, fig.height=10, Plot_Three}
+ggplot(data=wine_grade, 
+       aes(x=alcohol,
+           y=residual.sugar/citric.acid)) +
+  geom_point(alpha=0.2) +
+  geom_smooth(method='lm') +
+  facet_wrap(~quality) +
+  labs(x="Alcohol Level(% by volume)",
+       y="RC Ratio (residual sugar/citric acid)",
+       title="Wine Content Profiles")
+```
+
+### Description Three
+Using a faceted scatterplot, this graph is aimed at identifying the unique "content profile" of quality wines by combining the three most important factors (sugar, acidity, alcohol). By using citric acid instead of pH, this plot ensures unit consistency. The graph shows that as wine quality improves, RC ratio decreases and alcohol level increases. 
+
+
+------
+
+# Reflection
+I started by looking at the data and trying to find patterns. By examing different variables and their relationship using plots, I was able to have a clear understanding of factors affecting wine qualities. This signifies the importance of Exploratory Data Analysis(EDA) in data science. Therefore, I would treat this as one of my successes.
+
+On the other hand, although initial online research pointed me to the direction of "finding balanced taste", I overlooked the unit of variables. Afterall, when doing calculations for variables with different units, the meaningfulness is questionable. Therefore, better understanding of the data, particularly, the variables - what they represent, what are the units, how are they generated, what is the relationship with other variables - these are all questions that are worthwhile of being asked and can greatly speed up the feature selection and analysis process. Plus, I have always been trying to create a consistent "thoughts flow", when at times, it proved somewhat difficult. An example is when I was deep analyzing the relationship between an objective criterion and quality, I found it hard to link back to the main theme so that the flow is consistent. Thus, in terms of struggles, building a consistent overall work plan and link it back to the big picture is one.
+
+The next step in the project should involve actual model building using general linear model or other machine learning algorithms. By doing this, we can then conclude which features are useful, and compare with our conclusion in this report to understand the effectiveness of the feature selection method using EDA approach.
+
+# Reference
+1. [Factors Affecting Quality of Wine](https://fnbservicenotes.wordpress.com/2012/07/26/factors-affecting-quality-of-wine/)
+2. [Wine Analysis](https://www.megazyme.com/select-an-industry/wine-analysis)
+3. [4 Ways to Know if Your Wine Is Good](http://www.quickanddirtytips.com/house-home/entertaining/wine/4-ways-to-know-if-your-wine-is-good?page=all)
+4. [Learn How to Taste Wine & Develop Your Palate](http://winefolly.com/review/how-to-taste-wine-develop-palate/)
+5. [Figure Size](https://rstudio.github.io/dygraphs/r-markdown.html)
+6. [How to change correlation text size in ggpairs()](http://stackoverflow.com/questions/8599685/how-to-change-correlation-text-size-in-ggpairs)
