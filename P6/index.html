@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+      <meta charset="utf-8">
+      <script src="http://d3js.org/d3.v3.min.js"></script>
+      <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+
+      <style type="text/css">
+        
+        h2 {
+        	text-align: center;
+        	font-family: sans-serif; 
+        	font-size: xx-large;
+        }    
+
+        p {
+        	text-align: center;
+          font-family: sans-serif; 
+        }
+
+        svg {
+          margin-left:auto; 
+          margin-right:auto; 
+          display:block;  
+        }
+        img {
+          position: absolute;
+          left: 650px;
+          top: 380px;
+        }
+
+      </style>
+
+      <script type="text/javascript">
+        function draw(data) {
+
+          // D3.js setup code
+
+          "use strict";
+          var margin = 75,
+              width = 1400 - margin,
+              height = 600 - margin;
+
+         // Add the chart svg element
+          var svg = d3.select("div#visualization")
+            .append("svg")
+              .attr("width", width + margin)
+              .attr("height", height + margin)
+            .append('g')
+              .attr('class','chart');
+
+          // Dimple.js Chart construction code
+          
+          var myChart = new dimple.chart(svg, data);
+
+          // Contruct the x-axis that represents average delay time
+          var x_axis = myChart.addMeasureAxis("x", "avg_delay");
+          x_axis.title = "Average Flight Delay Time In Minutes";
+          x_axis.fontSize = "auto";
+                    
+          // Contruct the y-axis that represents the delayed flight percentages
+          var y_axis = myChart.addMeasureAxis("y", "percent");
+          y_axis.title = "Percentages of Delayed Flights";
+          y_axis.fontSize = "auto";
+          y_axis.tickFormat = "%";
+                    
+          // Add the z-axis (size) that corresponds to average delay time square-rooted
+          // Since we use the square root, the bubble area will be proportional to delay time
+          var z_axis = myChart.addMeasureAxis("z", "avg_delay_sqrt");
+          
+          var mySeries = myChart.addSeries("UniqueCarrier", dimple.plot.bubble);
+
+          myChart.addLegend(0, 60, 100, 600);
+          myChart.draw();
+
+          //var cx = d3.select('circle.dimple-aloha').attr('cx');
+          //var cy = d3.select('circle.dimple-aloha').attr('cy');
+          //return cx;
+          //return cy;
+        };  
+      </script>
+  </head>
+
+  <body>
+    <div id="text">
+      <h2>
+        Fly with Aloha Air if You don't Like Delays
+      </h2>
+      <p>
+        This visualization provides a quick overview of United States air carriers' flight delay situation. It highlights the percentages of delays and average delay time across different carriers. <br> As we can see, Aloha Air has the lowest percentage of delayed flights and shortest delay time (with circle area proportional to delay time). So do consider Aloha for your next travel!
+      </p>
+    </div>
+
+    <div id="visualization">
+          <script type="text/javascript">
+            d3.csv("delay_summary.csv", draw); // Use D3 to load the CSV file and pass the contents to the draw function
+          </script>
+    </div>
+    <div id ="logo">
+      <img src="Aloha_Airlines_Logo.svg" alt="Aloha Air" height="30" width="100">
+    </div>
+  </body>
+</html>
