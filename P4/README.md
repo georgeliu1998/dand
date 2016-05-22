@@ -11,3 +11,6 @@ The Rmd file contains the code and report for the project. To run it, you need t
 - gridExtra
 - GGally
 - dplyr
+
+# Data
+The project's data can be obtained from [here](https://docs.google.com/document/d/1qEcwltBMlRYZT-l699-71TzInWfk4W9q5rTCSvDVMpc/pub?embedded=true).
