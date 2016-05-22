@@ -11,7 +11,7 @@ measure the time it takes to name the ink colors in equally-sized lists. Each pa
 record a time from each condition.
 
 # Requirements
-The rmd document contain the code for the project. To run the file, you need to have R installed, plus the following packages:
+The rmd file contain the code for the project. To run it, you need to have R installed, plus the following packages:
 - tidyr
 - dplyr
 
