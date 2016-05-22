@@ -10,9 +10,12 @@ names do not match the colors in which they are printed: for example PURPLE, ORA
 measure the time it takes to name the ink colors in equally-sized lists. Each participant will go through and
 record a time from each condition.
 
-# Requirements
+## Requirements
 The rmd file contains the code for the project. To run it, you need to have R installed, plus the following packages:
 - tidyr
 - dplyr
 
 Statistical inference knowledge is also needed to fully understand the project report.
+
+## Data
+Project data can be obtained [here](https://drive.google.com/file/d/0B9Yf01UaIbUgQXpYb2NhZ29yX1U/view).
