@@ -18,3 +18,6 @@ Finally, the following Python packages are needed:
 - codecs
 - json
 - pymongo 
+
+## Data
+Project data can be obtained [here](https://www.openstreetmap.org ).
