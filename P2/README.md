@@ -14,3 +14,6 @@ of [Anaconda](https://www.continuum.io/downloads). Also, the following packages 
 - matploblib
 - pandas
 - seaborn
+
+## Data
+Project data can be obtained [here](https://www.udacity.com/api/nodes/5420148578/supplemental_media/titanic-datacsv/download?_ga=1.194316718.2006095131.1459276592).
