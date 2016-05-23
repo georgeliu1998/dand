@@ -14,4 +14,4 @@ You need to have Python installed, with the following packages:
 - pprint
 
 ## Data
-The project data can be downloaded [here]().
+The project data and starter code can be downloaded [here](https://github.com/udacity/ud120-projects/tree/master/final_project).
