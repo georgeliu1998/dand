@@ -14,4 +14,4 @@ This repo stores all my projects for the Udacity Data Analyst Nanodegree. The pr
 It's a great choice you made choosing Udacity! Just like me :-) Feel free to get inspiration here for your own projects. However, please do not copy and paste, since the most important thing is your understanding of the material and your own ability to tackle different problems, which cannot be achieved by simply using borrowed code. Best of luck with your study and stay Udacious! (Don't forget to [connect with me on LinkedIn](https://ca.linkedin.com/in/georgeliu2) to stay in touch)
 
 ## License
-This repo is release under the MIT license.
+This repo is released under the MIT license.
