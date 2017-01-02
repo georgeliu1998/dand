@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sys
-sys.path.append("../tools/")
+sys.path.append("./tools/")
 import pickle
 import matplotlib.pyplot
 from sklearn.preprocessing import MinMaxScaler
@@ -142,56 +142,47 @@ labels, features = targetFeatureSplit(data)
 
 # Prepare the pipeline including preprocessing, feature selection and algorithm running
 # Algorithms: SVC(), LinearSVC(), KNeighborsClassifier(), RandomForestClassifier(), GaussianNB() 
-pipe = make_pipeline(
-    MinMaxScaler(),
-    SelectKBest(),
-    GaussianNB()
-    )
+pipe = make_pipeline(MinMaxScaler(),
+                     SelectKBest(),
+                     GaussianNB())
 
-params = {
-    #'pca__n_components': [2],
-    'selectkbest__k': [4],
-    'selectkbest__score_func': [f_classif],
-    #'linearsvc__C': [0.1, 1, 10, 100],
-    #'linearsvc__dual': [False],
-    #'linearsvc__tol': [0.000001],
-    #'kneighborsclassifier__n_neighbors': [1, 5],
-    #'kneighborsclassifier__weights': ['uniform'], 
-    #'kneighborsclassifier__algorithm': ['auto', 'ball_tree'],
-    #'kneighborsclassifier__leaf_size': [1, 10],
-    #'svc__C': [0.1, 1, 10, 100],
-    #'svc__kernel': ['linear', 'rbf'],
-    #'svc__gamma': [0.001, 0.0001],
-    #'randomforestclassifier__n_estimators': [5, 10, 20]
-    }
+params = {#'pca__n_components': [2],
+          'selectkbest__k': [4],
+          'selectkbest__score_func': [f_classif],
+          #'linearsvc__C': [0.1, 1, 10, 100],
+          #'linearsvc__dual': [False],
+          #'linearsvc__tol': [0.000001],
+          #'kneighborsclassifier__n_neighbors': [1, 5],
+          #'kneighborsclassifier__weights': ['uniform'], 
+          #'kneighborsclassifier__algorithm': ['auto', 'ball_tree'],
+          #'kneighborsclassifier__leaf_size': [1, 10],
+          #'svc__C': [0.1, 1, 10, 100],
+          #'svc__kernel': ['linear', 'rbf'],
+          #'svc__gamma': [0.001, 0.0001],
+          #'randomforestclassifier__n_estimators': [5, 10, 20]
+          }
 
 # Split the data into training and testing sets
-features_train, features_test, labels_train, labels_test =  train_test_split(
-    features,
-    labels,
-    test_size=0.2,
-    random_state=42
-    )
+features_train, features_test, labels_train, labels_test = train_test_split(features,
+                                                                            labels,
+                                                                            test_size=0.2,
+                                                                            random_state=42)
 
 # Make an StratifiedShuffleSplit iterator for cross-validation in GridSearchCV
-sss = StratifiedShuffleSplit(
-    labels_train,
-    n_iter = 20,
-    test_size = 0.5,
-    random_state = 0
-    )
+sss = StratifiedShuffleSplit(labels_train,
+                             n_iter = 20,
+                             test_size = 0.5,
+                             random_state = 0)
 
 # Make the estimator using GridSearchCV and run cross-validation
 print 'GridSearching with cross-validation...'
-clf = GridSearchCV(
-    pipe,
-    param_grid = params,
-    scoring = 'f1',
-    n_jobs = 1,
-    cv = sss,
-    verbose = 1,
-    error_score = 0
-    )
+clf = GridSearchCV(pipe,
+                   param_grid = params,
+                   scoring = 'f1',
+                   n_jobs = 1,
+                   cv = sss,
+                   verbose = 1,
+                   error_score = 0)
 
 
 #########################################
@@ -207,11 +198,9 @@ scores = [round(s, 2) for s in scores] #round to 2 decimal points
 
 # Combine with features names and rank by score
 ftr_score = zip(features_list[1:], scores)
-ftr_score_sorted = sorted(
-    ftr_score,
-    key = lambda item: item[1],
-    reverse = True
-    ) 
+ftr_score_sorted = sorted(ftr_score,
+                          key = lambda item: item[1],
+                          reverse = True) 
 print "\nThe Scores for All the Features are:"
 pprint(ftr_score_sorted)
 
