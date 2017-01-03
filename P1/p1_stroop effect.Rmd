@@ -30,7 +30,7 @@ HA: mu_diff != 0 (The real difference between group population means is not zero
 
 ```{r}
 # Read in the data
-dat <- read.csv("C:/Users/George/Dropbox/WorkingDir/Udacity/P1/stroopdata.csv")
+dat <- read.csv("stroopdata.csv")
 # Tidy up the data for later analysis
 library(tidyr); suppressMessages(library(dplyr)) 
 # Add a column identifying subjects
