@@ -135,6 +135,12 @@ for key in my_dataset:
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
 
+print "features"
+print features
+print "\nlabels"
+print labels
+
+"""
 
 ##################################
 ### STEP 4: MAKE THE ESTIMATOR ###
@@ -220,3 +226,29 @@ print(classification_report(labels_test, pred))
 #########################################
 
 dump_classifier_and_data(clf, my_dataset, features_list)
+
+
+"""
+"""
+import matplotlib.pyplot as plt
+from sklearn.svm import SVC
+from sklearn.cross_validation import StratifiedKFold
+from sklearn.feature_selection import RFECV
+svc = SVC(kernel="linear")
+
+rfecv = RFECV(estimator=svc, step=1, scoring='precision')
+print 'start fitting'
+rfecv.fit(features, labels)
+print 'fitting done'
+print("Optimal number of features : %d" % rfecv.n_features_)
+print rfecv.support_
+features=features[:,rfecv.support_]
+# Plot number of features VS. cross-validation scores
+plt.figure()
+plt.xlabel("Number of features selected")
+plt.ylabel("Cross validation score (nb of correct classifications)")
+plt.plot(range(1, len(rfecv.grid_scores_) + 1), rfecv.grid_scores_)
+plt.show()
+
+"""
+
